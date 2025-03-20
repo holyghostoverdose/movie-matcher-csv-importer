@@ -5,7 +5,7 @@ import { TMDBMovie, TMDBSearchResponse } from '@/types';
 const apiCache = new Map<string, any>();
 
 // Base TMDB API configuration
-const API_KEY = 'YOUR_TMDB_API_KEY'; // Replace with your actual API key
+const API_KEY = '505c4a449d62a863815ffbafea6cbeb2'; // TMDB API key
 const BASE_URL = 'https://api.themoviedb.org/3';
 const POSTER_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 const BACKDROP_BASE_URL = 'https://image.tmdb.org/t/p/original';

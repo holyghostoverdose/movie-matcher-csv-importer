@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useImport } from '@/context/ImportContext';
 import { TMDBMovie, MovieMatch } from '@/types';
@@ -86,9 +85,7 @@ const MovieMatchRow: React.FC<MovieMatchRowProps> = ({ match, index, onUpdate })
       
       <CardContent className="pb-4">
         <div className="grid grid-cols-12 gap-4">
-          {/* Left side - CSV data and editable fields */}
           <div className="col-span-7 space-y-3">
-            {/* Date field - editable */}
             <div className="flex items-center gap-2">
               <Calendar size={16} className="text-muted-foreground flex-shrink-0" />
               {isEditingDate ? (
@@ -120,7 +117,6 @@ const MovieMatchRow: React.FC<MovieMatchRowProps> = ({ match, index, onUpdate })
               )}
             </div>
 
-            {/* Rating field - editable for rated movies */}
             <div className="flex items-center gap-2">
               <Star size={16} className="text-muted-foreground flex-shrink-0" />
               {isEditingRating ? (
@@ -156,7 +152,6 @@ const MovieMatchRow: React.FC<MovieMatchRowProps> = ({ match, index, onUpdate })
               )}
             </div>
 
-            {/* Movie search button */}
             <Button 
               variant="outline" 
               size="sm" 
@@ -167,7 +162,6 @@ const MovieMatchRow: React.FC<MovieMatchRowProps> = ({ match, index, onUpdate })
               {showSearch ? 'Hide search' : 'Search for movie'}
             </Button>
 
-            {/* Search interface */}
             {showSearch && (
               <div className="mt-2">
                 <MovieSearch
@@ -179,7 +173,6 @@ const MovieMatchRow: React.FC<MovieMatchRowProps> = ({ match, index, onUpdate })
             )}
           </div>
 
-          {/* Right side - Movie match */}
           <div className="col-span-5">
             {match.matchedMovie ? (
               <div className="flex flex-col items-center">
@@ -232,12 +225,10 @@ const ValidationInterface: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Filter matches based on "show only problems" toggle
   const filteredMatches = state.showOnlyProblems
     ? state.matches.filter(match => match.status !== 'matched')
     : state.matches;
 
-  // Calculate pagination
   const totalPages = Math.ceil(filteredMatches.length / itemsPerPage);
   const currentMatches = filteredMatches.slice(
     (currentPage - 1) * itemsPerPage,
@@ -262,12 +253,11 @@ const ValidationInterface: React.FC = () => {
       toast({
         title: `${unmatchedCount} movies unmatched`,
         description: "Some movies couldn't be matched. Continue anyway or fix the matches.",
-        variant: 'warning',
+        variant: 'destructive',
       });
       return;
     }
     
-    // Calculate import summary
     const summary = {
       total: state.matches.length,
       imported: state.matches.filter(m => m.matchedMovie).length,
@@ -281,7 +271,7 @@ const ValidationInterface: React.FC = () => {
 
   const toggleShowProblems = () => {
     dispatch({ type: 'TOGGLE_SHOW_PROBLEMS' });
-    setCurrentPage(1); // Reset to first page when toggling filter
+    setCurrentPage(1);
   };
 
   return (
@@ -316,7 +306,6 @@ const ValidationInterface: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-6">
@@ -348,7 +337,6 @@ const ValidationInterface: React.FC = () => {
         </Card>
       </div>
 
-      {/* Validation list */}
       {currentMatches.length > 0 ? (
         <div className="space-y-4">
           {currentMatches.map((match, index) => (
@@ -372,7 +360,6 @@ const ValidationInterface: React.FC = () => {
         </Card>
       )}
 
-      {/* Pagination */}
       {filteredMatches.length > 0 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
@@ -405,7 +392,6 @@ const ValidationInterface: React.FC = () => {
         </div>
       )}
 
-      {/* Action buttons */}
       <div className="flex justify-end space-x-4">
         <Button
           variant="outline"
