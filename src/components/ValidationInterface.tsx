@@ -12,8 +12,11 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useToast } from '@/hooks/use-toast';
-import { Check, AlertTriangle, X, Calendar, Star, Search, ArrowLeft, ArrowRight, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import { Check, AlertTriangle, X, Calendar, Star, Search, ArrowLeft, ArrowRight, Eye, EyeOff, CheckCircle2, ListChecks, ListX } from 'lucide-react';
+
+type FilterMode = 'all' | 'matched' | 'errors';
 
 interface MovieMatchRowProps {
   match: MovieMatch;
@@ -223,12 +226,22 @@ const ValidationInterface: React.FC = () => {
   const { state, dispatch } = useImport();
   const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
+  const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const itemsPerPage = 10;
 
-  const filteredMatches = state.showOnlyProblems
-    ? state.matches.filter(match => match.status !== 'matched')
-    : state.matches;
+  const getFilteredMatches = () => {
+    switch (filterMode) {
+      case 'matched':
+        return state.matches.filter(match => match.status === 'matched');
+      case 'errors':
+        return state.matches.filter(match => match.status !== 'matched');
+      case 'all':
+      default:
+        return state.matches;
+    }
+  };
 
+  const filteredMatches = getFilteredMatches();
   const totalPages = Math.ceil(filteredMatches.length / itemsPerPage);
   const currentMatches = filteredMatches.slice(
     (currentPage - 1) * itemsPerPage,
@@ -236,14 +249,14 @@ const ValidationInterface: React.FC = () => {
   );
 
   const handleUpdateMatch = (index: number, updatedMatch: Partial<MovieMatch>) => {
-    const realIndex = state.showOnlyProblems
-      ? state.matches.findIndex(m => m === filteredMatches[index])
-      : index + (currentPage - 1) * itemsPerPage;
+    const realIndex = state.matches.indexOf(filteredMatches[index + (currentPage - 1) * itemsPerPage]);
     
-    dispatch({
-      type: 'UPDATE_MATCH',
-      payload: { index: realIndex, match: updatedMatch }
-    });
+    if (realIndex >= 0) {
+      dispatch({
+        type: 'UPDATE_MATCH',
+        payload: { index: realIndex, match: updatedMatch }
+      });
+    }
   };
 
   const handleCompleteValidation = () => {
@@ -269,8 +282,8 @@ const ValidationInterface: React.FC = () => {
     dispatch({ type: 'SET_STEP', payload: 'summary' });
   };
 
-  const toggleShowProblems = () => {
-    dispatch({ type: 'TOGGLE_SHOW_PROBLEMS' });
+  const handleFilterChange = (value: string) => {
+    setFilterMode(value as FilterMode);
     setCurrentPage(1);
   };
 
@@ -284,26 +297,20 @@ const ValidationInterface: React.FC = () => {
           </p>
         </div>
         
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="show-problems"
-            checked={state.showOnlyProblems}
-            onCheckedChange={toggleShowProblems}
-          />
-          <Label htmlFor="show-problems" className="cursor-pointer">
-            {state.showOnlyProblems ? (
-              <span className="flex items-center">
-                <AlertTriangle size={14} className="mr-1 text-amber-500" />
-                Showing problems only
-              </span>
-            ) : (
-              <span className="flex items-center">
-                <Eye size={14} className="mr-1" />
-                Show all movies
-              </span>
-            )}
-          </Label>
-        </div>
+        <ToggleGroup type="single" value={filterMode} onValueChange={handleFilterChange} className="border rounded-md">
+          <ToggleGroupItem value="all" aria-label="Show all movies">
+            <Eye className="h-4 w-4 mr-1" />
+            All
+          </ToggleGroupItem>
+          <ToggleGroupItem value="matched" aria-label="Show only matched movies">
+            <CheckCircle2 className="h-4 w-4 mr-1" />
+            Matched
+          </ToggleGroupItem>
+          <ToggleGroupItem value="errors" aria-label="Show only problematic movies">
+            <AlertTriangle className="h-4 w-4 mr-1" />
+            Issues
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
@@ -341,7 +348,7 @@ const ValidationInterface: React.FC = () => {
         <div className="space-y-4">
           {currentMatches.map((match, index) => (
             <MovieMatchRow
-              key={index}
+              key={`match-${index}-${match.detectedTitle}`}
               match={match}
               index={index}
               onUpdate={handleUpdateMatch}
@@ -351,11 +358,13 @@ const ValidationInterface: React.FC = () => {
       ) : (
         <Card className="p-8 text-center">
           <CheckCircle2 size={48} className="mx-auto text-green-500 mb-4" />
-          <CardTitle>No issues found!</CardTitle>
+          <CardTitle>No movies found!</CardTitle>
           <CardDescription className="mt-2">
-            {state.showOnlyProblems
-              ? "All movies have been successfully matched. You can proceed with the import."
-              : "No movies found in your CSV. Try uploading a different file."}
+            {filterMode === 'errors'
+              ? "No problematic movies found. All movies have been matched successfully."
+              : filterMode === 'matched' 
+                ? "No matched movies found. Try changing your filter."
+                : "No movies found in your CSV. Try uploading a different file."}
           </CardDescription>
         </Card>
       )}

@@ -11,7 +11,6 @@ interface ImportState {
   currentStep: 'select' | 'validate' | 'summary';
   error: string | null;
   importSummary: ImportSummary | null;
-  showOnlyProblems: boolean;
 }
 
 // Import context actions
@@ -24,7 +23,6 @@ type ImportAction =
   | { type: 'SET_STEP'; payload: ImportState['currentStep'] }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_IMPORT_SUMMARY'; payload: ImportSummary }
-  | { type: 'TOGGLE_SHOW_PROBLEMS'; payload?: boolean }
   | { type: 'RESET' };
 
 // Initial state
@@ -39,7 +37,6 @@ const initialState: ImportState = {
   currentStep: 'select',
   error: null,
   importSummary: null,
-  showOnlyProblems: false,
 };
 
 // Reducer function
@@ -75,14 +72,6 @@ function importReducer(state: ImportState, action: ImportAction): ImportState {
     
     case 'SET_IMPORT_SUMMARY':
       return { ...state, importSummary: action.payload };
-    
-    case 'TOGGLE_SHOW_PROBLEMS':
-      return {
-        ...state,
-        showOnlyProblems: action.payload !== undefined
-          ? action.payload
-          : !state.showOnlyProblems,
-      };
     
     case 'RESET':
       return { ...initialState };

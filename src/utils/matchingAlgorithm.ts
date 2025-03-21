@@ -1,4 +1,3 @@
-
 import { searchMovies } from './tmdbAPI';
 import { TMDBMovie, MovieMatch } from '@/types';
 
@@ -97,11 +96,11 @@ function calculateConfidence(
   return Math.min(confidence, 1); // Cap at 1.0
 }
 
-// Determine match status based on confidence score
-function getMatchStatus(confidence: number): 'matched' | 'uncertain' | 'unmatched' {
-  if (confidence >= 0.8) return 'matched';
-  if (confidence >= 0.5) return 'uncertain';
-  return 'unmatched';
+// Determine match status based on the presence of search results
+// Modified to consider all movies with search results as "matched"
+function getMatchStatus(confidence: number, hasResults: boolean): 'matched' | 'uncertain' | 'unmatched' {
+  if (!hasResults) return 'unmatched';
+  return 'matched';
 }
 
 // Find the best movie match for a given title and year
@@ -139,7 +138,8 @@ export async function findBestMatch(
       .slice(1, 6)
       .map(item => item.movie);
     
-    const status = getMatchStatus(bestMatch.confidence);
+    // Updated to mark as matched if we have any results
+    const status = getMatchStatus(bestMatch.confidence, searchResults.length > 0);
     
     return {
       csvData: [],
