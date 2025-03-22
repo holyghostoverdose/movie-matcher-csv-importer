@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useImport } from '@/context/ImportContext';
 import { TMDBMovie, MovieMatch } from '@/types';
 import { getPosterUrl } from '@/utils/tmdbAPI';
@@ -15,6 +15,15 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useToast } from '@/hooks/use-toast';
 import { Check, AlertTriangle, X, Calendar, Star, Search, ArrowLeft, ArrowRight, Eye, EyeOff, CheckCircle2, ListChecks, ListX } from 'lucide-react';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 type FilterMode = 'all' | 'matched' | 'errors';
 
@@ -222,12 +231,63 @@ const MovieMatchRow: React.FC<MovieMatchRowProps> = ({ match, index, onUpdate })
   );
 };
 
+const PaginationControls = ({ 
+  currentPage, 
+  totalPages, 
+  setCurrentPage,
+  className = ""
+}: { 
+  currentPage: number; 
+  totalPages: number; 
+  setCurrentPage: (page: number) => void;
+  className?: string;
+}) => {
+  return (
+    <Pagination className={className}>
+      <PaginationContent>
+        <PaginationItem>
+          <PaginationPrevious 
+            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+            className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+          />
+        </PaginationItem>
+        
+        {totalPages > 0 && (
+          <PaginationItem>
+            <PaginationLink isActive>
+              {currentPage} of {totalPages}
+            </PaginationLink>
+          </PaginationItem>
+        )}
+        
+        <PaginationItem>
+          <PaginationNext 
+            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+            className={currentPage === totalPages || totalPages === 0 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+          />
+        </PaginationItem>
+      </PaginationContent>
+    </Pagination>
+  );
+};
+
 const ValidationInterface: React.FC = () => {
   const { state, dispatch } = useImport();
   const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const itemsPerPage = 10;
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    if (contentRef.current) {
+      contentRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   const getFilteredMatches = () => {
     switch (filterMode) {
@@ -284,11 +344,11 @@ const ValidationInterface: React.FC = () => {
 
   const handleFilterChange = (value: string) => {
     setFilterMode(value as FilterMode);
-    setCurrentPage(1);
+    handlePageChange(1);
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={contentRef}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">Validate Imported Movies</h2>
@@ -344,6 +404,20 @@ const ValidationInterface: React.FC = () => {
         </Card>
       </div>
 
+      {filteredMatches.length > 0 && (
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredMatches.length)} of {filteredMatches.length} entries
+          </div>
+          
+          <PaginationControls 
+            currentPage={currentPage} 
+            totalPages={totalPages} 
+            setCurrentPage={handlePageChange} 
+          />
+        </div>
+      )}
+
       {currentMatches.length > 0 ? (
         <div className="space-y-4">
           {currentMatches.map((match, index) => (
@@ -370,34 +444,16 @@ const ValidationInterface: React.FC = () => {
       )}
 
       {filteredMatches.length > 0 && (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mt-6">
           <div className="text-sm text-muted-foreground">
             Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredMatches.length)} of {filteredMatches.length} entries
           </div>
           
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-            >
-              <ArrowLeft size={16} />
-            </Button>
-            
-            <span className="text-sm">
-              Page {currentPage} of {totalPages || 1}
-            </span>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages || totalPages === 0}
-            >
-              <ArrowRight size={16} />
-            </Button>
-          </div>
+          <PaginationControls 
+            currentPage={currentPage} 
+            totalPages={totalPages} 
+            setCurrentPage={handlePageChange} 
+          />
         </div>
       )}
 

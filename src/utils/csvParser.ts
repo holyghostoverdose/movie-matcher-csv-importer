@@ -1,4 +1,3 @@
-
 import { CSVColumn, CSVParsingResult } from '@/types';
 import Papa from 'papaparse';
 
@@ -285,20 +284,11 @@ export function extractRating(row: string[], columns: CSVColumn[]): number | und
     return (ratingStr.match(/★/g) || []).length;
   }
   
-  // Handle numerical ratings
+  // Handle numerical ratings - preserving original values
   const numericRating = parseFloat(ratingStr);
   if (!isNaN(numericRating)) {
-    // Normalize to a 1-10 scale
-    if (numericRating <= 5) {
-      // Assume 5-star scale
-      return numericRating * 2;
-    } else if (numericRating <= 10) {
-      // Already on 10-point scale
-      return numericRating;
-    } else if (numericRating <= 100) {
-      // Percentage scale
-      return numericRating / 10;
-    }
+    // Return the exact rating as-is without normalization
+    return numericRating;
   }
   
   return undefined;
