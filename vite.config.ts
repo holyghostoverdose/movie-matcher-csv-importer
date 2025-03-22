@@ -6,16 +6,14 @@ export default defineConfig({
   plugins: [react()],
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'), // Path to your entry file
-      name: 'MovieMatcher', // Global variable name when used in browser
-      formats: ['es', 'umd'], // Output formats
+      entry: resolve(__dirname, 'src/index.ts'), // Make sure this path is correct
+      name: 'MovieMatcher',
+      formats: ['es', 'umd'],
       fileName: (format) => `movie-matcher.${format}.js`
     },
     rollupOptions: {
-      // Mark dependencies as external so they aren't bundled
       external: ['react', 'react-dom'],
       output: {
-        // Provide globals for UMD build
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM'
