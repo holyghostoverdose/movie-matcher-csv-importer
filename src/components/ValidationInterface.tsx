@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useImport } from '@/context/ImportContext';
 import { TMDBMovie, MovieMatch } from '@/types';
@@ -14,7 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useToast } from '@/hooks/use-toast';
-import { Check, AlertTriangle, X, Calendar, Star, Search, ArrowLeft, ArrowRight, Eye, EyeOff, CheckCircle2, ListChecks, ListX } from 'lucide-react';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { Check, AlertTriangle, X, Calendar, Star, Search, ArrowLeft, ArrowRight, Eye, EyeOff, CheckCircle2, ListChecks, ListX, Info } from 'lucide-react';
 import {
   Pagination,
   PaginationContent,
@@ -188,11 +190,40 @@ const MovieMatchRow: React.FC<MovieMatchRowProps> = ({ match, index, onUpdate })
           <div className="col-span-5">
             {match.matchedMovie ? (
               <div className="flex flex-col items-center">
-                <MovieCard 
-                  movie={match.matchedMovie} 
-                  confidence={match.confidence}
-                  size="sm"
-                />
+                <HoverCard>
+                  <HoverCardTrigger asChild>
+                    <div className="cursor-pointer">
+                      <MovieCard 
+                        movie={match.matchedMovie} 
+                        confidence={match.confidence}
+                        size="sm"
+                      />
+                    </div>
+                  </HoverCardTrigger>
+                  <HoverCardContent className="w-80">
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold">{match.matchedMovie.title} 
+                        {match.matchedMovie.release_date && (
+                          <span className="text-muted-foreground font-normal">
+                            {" "}({new Date(match.matchedMovie.release_date).getFullYear()})
+                          </span>
+                        )}
+                      </h4>
+                      {match.matchedMovie.overview && (
+                        <p className="text-xs text-muted-foreground line-clamp-4">
+                          {match.matchedMovie.overview}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 text-xs">
+                        <Star className="h-3.5 w-3.5 text-yellow-500" />
+                        <span>{match.matchedMovie.vote_average.toFixed(1)}/10</span>
+                        <span className="text-muted-foreground">
+                          ({match.matchedMovie.vote_count.toLocaleString()} votes)
+                        </span>
+                      </div>
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
                 
                 <Button 
                   variant="ghost" 
@@ -281,13 +312,22 @@ const ValidationInterface: React.FC = () => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    // Scroll to top when changing pages
     if (contentRef.current) {
-      contentRef.current.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
+      contentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      // For cases when the contentRef itself is not scrollable
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
+
+  useEffect(() => {
+    // Make sure we scroll to top when component mounts or currentPage changes
+    if (contentRef.current) {
+      contentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      // Fallback to window scrolling if contentRef is not scrollable
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [currentPage]);
 
   const getFilteredMatches = () => {
     switch (filterMode) {
