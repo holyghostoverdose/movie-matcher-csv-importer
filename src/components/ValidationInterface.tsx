@@ -1,8 +1,8 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useImport } from '@/context/ImportContext';
 import { TMDBMovie, MovieMatch } from '@/types';
 import { getPosterUrl } from '@/utils/tmdbAPI';
-import { downloadUnmatchedMovies } from '@/utils/exportUtils';
 import MovieCard from './MovieCard';
 import MovieSearch from './MovieSearch';
 import { Button } from '@/components/ui/button';
@@ -16,17 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useToast } from '@/hooks/use-toast';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { Check, AlertTriangle, X, Calendar, Star, Search, ArrowLeft, ArrowRight, Eye, EyeOff, CheckCircle2, ListChecks, ListX, Info, FileDown, FileText } from 'lucide-react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Check, AlertTriangle, X, Calendar, Star, Search, ArrowLeft, ArrowRight, Eye, EyeOff, CheckCircle2, ListChecks, ListX, Info } from 'lucide-react';
 import {
   Pagination,
   PaginationContent,
@@ -317,21 +307,24 @@ const ValidationInterface: React.FC = () => {
   const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
-  const [showUnmatchedDialog, setShowUnmatchedDialog] = useState(false);
   const itemsPerPage = 10;
   const contentRef = useRef<HTMLDivElement>(null);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    // Scroll to top when changing pages
     if (contentRef.current) {
       contentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      // For cases when the contentRef itself is not scrollable
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   useEffect(() => {
+    // Make sure we scroll to top when component mounts or currentPage changes
     if (contentRef.current) {
       contentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      // Fallback to window scrolling if contentRef is not scrollable
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [currentPage]);
@@ -366,31 +359,27 @@ const ValidationInterface: React.FC = () => {
     }
   };
 
-  const unmatchedMovies = state.matches.filter(m => !m.matchedMovie);
-
   const handleCompleteValidation = () => {
-    if (unmatchedMovies.length > 0) {
-      setShowUnmatchedDialog(true);
+    const unmatchedCount = state.matches.filter(m => !m.matchedMovie).length;
+    
+    if (unmatchedCount > 0) {
+      toast({
+        title: `${unmatchedCount} movies unmatched`,
+        description: "Some movies couldn't be matched. Continue anyway or fix the matches.",
+        variant: 'destructive',
+      });
       return;
     }
     
-    proceedWithImport();
-  };
-
-  const proceedWithImport = () => {
     const summary = {
       total: state.matches.length,
       imported: state.matches.filter(m => m.matchedMovie).length,
-      skipped: unmatchedMovies.length,
-      failed: 0,
+      skipped: 0,
+      failed: state.matches.filter(m => !m.matchedMovie).length,
     };
     
     dispatch({ type: 'SET_IMPORT_SUMMARY', payload: summary });
     dispatch({ type: 'SET_STEP', payload: 'summary' });
-  };
-
-  const handleDownloadUnmatched = () => {
-    downloadUnmatchedMovies(unmatchedMovies);
   };
 
   const handleFilterChange = (value: string) => {
@@ -519,52 +508,6 @@ const ValidationInterface: React.FC = () => {
           Complete Import
         </Button>
       </div>
-
-      <AlertDialog open={showUnmatchedDialog} onOpenChange={setShowUnmatchedDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-              Unmatched Movies Found
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {unmatchedMovies.length} {unmatchedMovies.length === 1 ? 'movie' : 'movies'} could not be matched. 
-              These movies will be skipped during import. Would you like to download a list of the unmatched movies for later reference?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="py-4">
-            <div className="rounded-md bg-amber-50 p-4 border border-amber-200">
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <FileText className="h-5 w-5 text-amber-400" />
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-amber-800">Unmatched movies will be skipped</h3>
-                  <div className="mt-2 text-sm text-amber-700">
-                    <p>
-                      You can download a CSV file with these movies to import them later after fixing any issues.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <Button 
-              variant="outline" 
-              className="gap-2"
-              onClick={handleDownloadUnmatched}
-            >
-              <FileDown className="h-4 w-4" />
-              Download List
-            </Button>
-            <AlertDialogAction onClick={proceedWithImport}>
-              Proceed Anyway
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
