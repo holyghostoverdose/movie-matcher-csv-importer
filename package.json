@@ -1,22 +1,19 @@
 {
-  "name": "vite_react_shadcn_ts",
-  "private": true,
+  "name": "movie-matcher",
+  "private": false,  // Change this to false
   "version": "1.0.0",
-  "description": "movie-matcher",
-  "main": "dist/index.js",         // CommonJS entry point (for require())
-  "module": "dist/index.esm.js",   // ES modules entry point (for import)
-  "types": "dist/index.d.ts",      // TypeScript type definitions
-  "exports": {                     // Modern exports field for specific imports
-    ".": {
-      "import": "./dist/index.esm.js",
-      "require": "./dist/index.js"
-    }
-  },
-  "files": ["dist"]                // Files to include when installed
+  "description": "movie-matcher-mechanism",
+  "main": "dist/index.js",  // Point to your compiled code
+  "module": "dist/index.js", // ESM entry point
+  "types": "dist/index.d.ts", // TypeScript definitions
+  "type": "module",
+  "files": ["dist"], // Only include dist folder when installed
+>>>>>>> 7a80ca0 (Convert project to installable package)
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "prepare": "npm run build", // Runs before the package is packed
     "lint": "eslint .",
     "preview": "vite preview"
   },
