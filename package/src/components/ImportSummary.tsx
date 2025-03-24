@@ -1,125 +1,98 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useImport } from '../ImportContext';
+import { Button } from './ui/button';
+import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 interface ImportSummaryProps {
-  onImportComplete?: () => void;
+  onImportComplete: (summary: any) => void;
+  onImportError: (error: Error) => void;
 }
 
-const ImportSummary: React.FC<ImportSummaryProps> = ({ onImportComplete }) => {
+export function ImportSummary({
+  onImportComplete,
+  onImportError
+}: ImportSummaryProps) {
   const { state, dispatch } = useImport();
-  const [isImporting, setIsImporting] = useState(false);
+  const { matches, importOptions } = state;
 
-  const handleFinishImport = () => {
-    setIsImporting(true);
+  const matchedCount = matches.filter(m => m.status === 'matched').length;
+  const uncertainCount = matches.filter(m => m.status === 'uncertain').length;
+  const unmatchedCount = matches.filter(m => m.status === 'unmatched').length;
 
-    // Call the onImportComplete callback
-    if (onImportComplete) {
-      onImportComplete();
+  const handleImport = () => {
+    try {
+      const summary = {
+        total: matches.length,
+        matched: matchedCount,
+        uncertain: uncertainCount,
+        unmatched: unmatchedCount,
+        matches: matches.map(match => ({
+          title: match.matchedMovie?.title || match.detectedTitle,
+          year: match.matchedMovie?.release_date?.split('-')[0] || match.detectedYear,
+          date: match.detectedDate,
+          rating: match.detectedRating,
+          confidence: match.confidence,
+          status: match.status,
+          tmdbId: match.matchedMovie?.id
+        }))
+      };
+
+      onImportComplete(summary);
+    } catch (error) {
+      onImportError(error as Error);
     }
-
-    // Simulate finalizing the import - in a real app, this would save to backend
-    setTimeout(() => {
-      alert(`Successfully imported ${state.importSummary?.imported} movies.`);
-      setIsImporting(false);
-      dispatch({
-        type: 'SET_STEP',
-        payload: 'select'
-      });
-    }, 1500);
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Import Summary</h2>
-        <p className="text-muted-foreground">
-          Review your import results before finalizing
+      <div className="grid grid-cols-3 gap-4">
+        <div className="rounded-lg border bg-card p-4">
+          <div className="flex items-center space-x-2">
+            <CheckCircle className="h-5 w-5 text-green-500" />
+            <div>
+              <p className="text-sm font-medium">Matched</p>
+              <p className="text-2xl font-bold">{matchedCount}</p>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-lg border bg-card p-4">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="h-5 w-5 text-yellow-500" />
+            <div>
+              <p className="text-sm font-medium">Uncertain</p>
+              <p className="text-2xl font-bold">{uncertainCount}</p>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-lg border bg-card p-4">
+          <div className="flex items-center space-x-2">
+            <XCircle className="h-5 w-5 text-red-500" />
+            <div>
+              <p className="text-sm font-medium">Unmatched</p>
+              <p className="text-2xl font-bold">{unmatchedCount}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium">Import Summary</h3>
+        <p className="text-sm text-muted-foreground">
+          {matchedCount} movies were successfully matched, {uncertainCount} need review, and {unmatchedCount} couldn't be matched.
         </p>
       </div>
-      
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="border rounded-lg shadow-sm">
-          <div className="p-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold">{state.importSummary?.total || 0}</div>
-              <p className="text-sm text-muted-foreground">Total movies</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="border rounded-lg shadow-sm">
-          <div className="p-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-green-500">{state.importSummary?.imported || 0}</div>
-              <p className="text-sm text-muted-foreground">Imported</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="border rounded-lg shadow-sm">
-          <div className="p-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-amber-500">{state.importSummary?.skipped || 0}</div>
-              <p className="text-sm text-muted-foreground">Skipped</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="border rounded-lg shadow-sm">
-          <div className="p-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-red-500">{state.importSummary?.failed || 0}</div>
-              <p className="text-sm text-muted-foreground">Failed</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div className="border rounded-lg shadow-sm">
-        <div className="p-6">
-          <div className="flex items-center justify-center space-x-2 text-center mb-2">
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className="h-6 w-6 text-green-500" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M5 13l4 4L19 7" 
-              />
-            </svg>
-            <h3 className="text-lg font-medium">Ready to complete import</h3>
-          </div>
-          <p className="text-sm text-center text-muted-foreground mb-4">
-            Your movies have been processed and are ready to be added to your collection.
-          </p>
-          
-          <div className="flex justify-center space-x-4">
-            <button 
-              onClick={() => dispatch({
-                type: 'SET_STEP',
-                payload: 'validate'
-              })}
-              className="py-2 px-4 rounded-md border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
-            >
-              Back to validation
-            </button>
-            <button 
-              onClick={handleFinishImport} 
-              disabled={isImporting}
-              className="py-2 px-4 rounded-md bg-primary text-white text-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
-            >
-              {isImporting ? 'Importing...' : 'Finish import'}
-            </button>
-          </div>
-        </div>
+
+      <div className="flex justify-end space-x-2">
+        <Button
+          variant="outline"
+          onClick={() => dispatch({ type: 'SET_STEP', payload: 'validate' })}
+        >
+          Review Matches
+        </Button>
+        <Button onClick={handleImport}>
+          Import {matchedCount} Movies
+        </Button>
       </div>
     </div>
   );
-};
-
-export default ImportSummary; 
+} 

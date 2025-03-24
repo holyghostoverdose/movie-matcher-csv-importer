@@ -4,16 +4,25 @@ import { ImportOptions } from '../types';
 import { parseCSV, extractTitle, extractYear, extractDate, extractRating } from '../utils/csvParser';
 import { configureTMDB } from '../utils/tmdbAPI';
 import { batchProcessMatches } from '../utils/matchingAlgorithm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { ValidationInterface } from './ValidationInterface';
+import { ImportSummary } from './ImportSummary';
 
 export interface ImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tmdbApiKey: string;
+  onImportComplete?: (summary: any) => void;
+  onImportError?: (error: Error) => void;
 }
 
-export const ImportDialog: React.FC<ImportDialogProps> = ({ 
-  open, 
+export function ImportDialog({
+  open,
   onOpenChange,
+  tmdbApiKey,
+  onImportComplete,
+  onImportError
+}: ImportDialogProps) {
   tmdbApiKey
 }) => {
   const { state, dispatch } = useImport();

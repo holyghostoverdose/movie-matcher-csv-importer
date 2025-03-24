@@ -49,7 +49,7 @@ function importReducer(state: ImportState, action: ImportAction): ImportState {
     case 'SET_IMPORT_SUMMARY':
       return { ...state, importSummary: action.payload };
     
-    case 'RESET':
+    case 'RESET_STATE':
       return { ...initialState };
     
     default:

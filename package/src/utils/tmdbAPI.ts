@@ -24,10 +24,19 @@ export const configureTMDB = (tmdbConfig: TMDBConfig) => {
   };
 };
 
-export const getPosterUrl = (path: string | null): string => {
-  if (!path) return '/placeholder.svg';
-  return `${POSTER_BASE_URL}${path}`;
-};
+export function getPosterUrl(posterPath: string | null, size: 'sm' | 'md' | 'lg' = 'md'): string {
+  if (!posterPath) {
+    return '/placeholder-poster.png';
+  }
+
+  const sizes = {
+    sm: 'w185',
+    md: 'w342',
+    lg: 'w500'
+  };
+
+  return `${POSTER_BASE_URL}${sizes[size]}${posterPath}`;
+}
 
 export const getBackdropUrl = (path: string | null): string => {
   if (!path) return '';

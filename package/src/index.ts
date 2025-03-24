@@ -1,17 +1,33 @@
-// Export components
-export { default as MovieImporter } from './components/MovieImporter';
+// Components
+export { MovieImporter } from './components/MovieImporter';
 export { ImportDialog } from './components/ImportDialog';
 export { ValidationInterface } from './components/ValidationInterface';
 export { MovieCard } from './components/MovieCard';
 export { MovieSearch } from './components/MovieSearch';
 
-// Export context
-export { ImportProvider, useImport } from './ImportContext';
+// Context
+export { ImportProvider } from './ImportContext';
+export { useImport } from './ImportContext';
 
-// Export utilities
-export * from './utils/tmdbAPI';
-export * from './utils/csvParser';
-export * from './utils/matchingAlgorithm';
+// Utilities
+export { configureTMDB, searchMovies, getPosterUrl, getBackdropUrl } from './utils/tmdbAPI';
+export { parseCSV, detectCsvFormat } from './utils/csvParser';
+export { findBestMatch, batchProcessMatches } from './utils/matchingAlgorithm';
 
-// Export types
-export * from './types'; 
+// Types
+export type {
+  Movie,
+  Genre,
+  TMDBMovie,
+  TMDBSearchResponse,
+  CSVColumn,
+  CSVParsingResult,
+  ImportOptions,
+  MovieMatch,
+  ImportSummary,
+  ImportState,
+  ImportAction,
+  MovieCardProps,
+  MovieCardSize,
+  MovieSearchProps
+} from './types'; 

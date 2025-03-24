@@ -5,6 +5,8 @@ import { getPosterUrl } from '../utils/tmdbAPI';
 import { ImportDialog } from './ImportDialog';
 import { ValidationInterface } from './ValidationInterface';
 import ImportSummary from './ImportSummary';
+import { Button } from './ui/button';
+import { Upload } from 'lucide-react';
 
 // Star component for displaying ratings
 const Star: React.FC<{
@@ -67,121 +69,54 @@ const ImportedMovieCard: React.FC<{
   );
 };
 
-// Component for selecting import options and importing CSV
 export interface MovieImporterProps {
-  onImportComplete?: (movies: Movie[]) => void;
-  tmdbApiKey: string;
+  onImportComplete?: (summary: any) => void;
+  onImportError?: (error: Error) => void;
+  className?: string;
+  buttonText?: string;
+  buttonVariant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  buttonSize?: 'default' | 'sm' | 'lg' | 'icon';
 }
 
-export const MovieImporter: React.FC<MovieImporterProps> = ({ 
+export function MovieImporter({
   onImportComplete,
-  tmdbApiKey
-}) => {
-  const { state, dispatch } = useImport();
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  onImportError,
+  className,
+  buttonText = 'Import Movies',
+  buttonVariant = 'default',
+  buttonSize = 'default'
+}: MovieImporterProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const { dispatch } = useImport();
 
-  // Generate imported movies based on matches
-  const importedMovies: Movie[] = state.matches
-    .filter(match => match.matchedMovie)
-    .map(match => ({
-      id: Math.random(),
-      tmdbId: match.matchedMovie!.id,
-      title: match.matchedMovie!.title,
-      originalTitle: match.matchedMovie!.original_title,
-      posterPath: match.matchedMovie!.poster_path,
-      backdropPath: match.matchedMovie!.backdrop_path,
-      releaseDate: match.matchedMovie!.release_date,
-      watchedDate: match.detectedDate,
-      rating: match.detectedRating,
-      status: state.importOptions.type,
-      importConfidence: match.confidence,
-      originalData: match.csvData.reduce((obj, val, idx) => {
-        if (match.originalColumns && match.originalColumns[idx]) {
-          obj[match.originalColumns[idx].name] = val;
-        }
-        return obj;
-      }, {} as Record<string, string>)
-    }));
-
-  // Handle import completion
-  const handleImportComplete = () => {
-    if (onImportComplete) {
-      onImportComplete(importedMovies);
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (!open) {
+      // Reset state when dialog is closed
+      dispatch({ type: 'RESET_STATE' });
     }
   };
 
   return (
-    <div className="container mx-auto py-8 px-4 sm:px-6">
-      {state.error && (
-        <div className="bg-destructive/15 text-destructive px-4 py-3 rounded-md mb-6">
-          <p className="font-medium">Import Error</p>
-          <p className="text-sm">{state.error}</p>
-        </div>
-      )}
-      
-      <div className="space-y-8">
-        {state.currentStep === 'validate' ? (
-          <ValidationInterface />
-        ) : state.currentStep === 'summary' ? (
-          <ImportSummary onImportComplete={handleImportComplete} />
-        ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                className="h-8 w-8 text-muted-foreground" 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" 
-                />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium mb-2">Import your movies from CSV</h3>
-            <p className="text-muted-foreground max-w-md mb-6">
-              Import movie collections from Letterboxd, IMDb, or your own custom CSV format.
-            </p>
-            <button 
-              onClick={() => setImportDialogOpen(true)}
-              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors
-                        focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring 
-                        disabled:pointer-events-none disabled:opacity-50 
-                        bg-primary text-primary-foreground hover:bg-primary/90
-                        h-9 px-4 py-2"
-            >
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                className="h-4 w-4 mr-2" 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" 
-                />
-              </svg>
-              Import Movies
-            </button>
-          </div>
-        )}
-      </div>
-      
-      <ImportDialog 
-        open={importDialogOpen} 
-        onOpenChange={setImportDialogOpen}
-        tmdbApiKey={tmdbApiKey}
+    <>
+      <Button
+        variant={buttonVariant}
+        size={buttonSize}
+        onClick={() => setIsOpen(true)}
+        className={className}
+      >
+        <Upload className="mr-2 h-4 w-4" />
+        {buttonText}
+      </Button>
+
+      <ImportDialog
+        open={isOpen}
+        onOpenChange={handleOpenChange}
+        onImportComplete={onImportComplete}
+        onImportError={onImportError}
       />
-    </div>
+    </>
   );
-};
+}
 
 export default MovieImporter; 

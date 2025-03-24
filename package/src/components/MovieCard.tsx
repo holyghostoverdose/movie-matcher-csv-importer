@@ -1,84 +1,65 @@
 import React from 'react';
-import { TMDBMovie } from '../types';
+import { MovieCardProps } from '../types';
 import { getPosterUrl } from '../utils/tmdbAPI';
 
-interface MovieCardProps {
-  movie: TMDBMovie;
-  confidence?: number;
-  isSelected?: boolean;
-  onSelect?: () => void;
-  size?: 'sm' | 'md' | 'lg';
-}
-
-export const MovieCard: React.FC<MovieCardProps> = ({
+export function MovieCard({
   movie,
-  confidence,
-  isSelected,
-  onSelect,
   size = 'md',
-}) => {
-  // Get release year from date
-  const releaseYear = movie.release_date 
-    ? new Date(movie.release_date).getFullYear() 
-    : undefined;
+  showConfidence = false,
+  confidence,
+  selected = false,
+  onSelect
+}: MovieCardProps) {
+  const year = movie.release_date?.split('-')[0];
+  
+  const sizeClasses = {
+    sm: 'w-32 h-48',
+    md: 'w-48 h-72',
+    lg: 'w-64 h-96'
+  };
 
-  // Determine poster dimensions based on size
-  const dimensions = {
-    sm: 'w-24 h-36',
-    md: 'w-32 h-48',
-    lg: 'w-40 h-60',
-  }[size];
+  const confidenceColor = confidence
+    ? confidence > 0.7
+      ? 'bg-green-500'
+      : confidence > 0.4
+      ? 'bg-yellow-500'
+      : 'bg-red-500'
+    : '';
 
   return (
-    <div 
+    <div
       className={`
-        relative overflow-hidden rounded-lg transition-all duration-300
-        ${isSelected 
-          ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-[1.02]' 
-          : 'hover:scale-[1.02]'
-        }
-        ${onSelect ? 'cursor-pointer' : ''}
+        relative group cursor-pointer rounded-lg overflow-hidden
+        ${selected ? 'ring-2 ring-primary' : ''}
+        ${onSelect ? 'hover:ring-2 hover:ring-primary/50' : ''}
       `}
-      onClick={onSelect}
+      onClick={() => onSelect?.(movie)}
     >
-      <div className={`relative ${dimensions} bg-muted`}>
-        {/* Poster */}
-        <img
-          src={getPosterUrl(movie.poster_path)}
-          alt={movie.title}
-          className="w-full h-full object-cover rounded-lg"
-          loading="lazy"
-        />
-
-        {/* Confidence badge - if provided */}
-        {confidence !== undefined && (
-          <div className="absolute top-1 right-1">
-            <div className={`
-              px-1.5 py-0.5 text-xs rounded-md
-              ${confidence > 0.7 ? 'bg-green-500 text-white' : 
-                confidence > 0.5 ? 'bg-yellow-500 text-white' : 
-                'bg-red-500 text-white'}
-            `}>
-              {Math.round(confidence * 100)}%
-            </div>
-          </div>
-        )}
-
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent rounded-lg" />
-
-        {/* Movie info overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-2 text-white">
-          <h3 className="font-medium text-sm leading-tight text-balance line-clamp-2">
-            {movie.title}
-          </h3>
-          {releaseYear && (
-            <span className="text-xs text-gray-300">{releaseYear}</span>
+      <img
+        src={getPosterUrl(movie.poster_path, size)}
+        alt={movie.title}
+        className={`w-full h-full object-cover transition-transform group-hover:scale-105 ${sizeClasses[size]}`}
+      />
+      
+      {showConfidence && confidence && (
+        <div className={`
+          absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium text-white
+          ${confidenceColor}
+        `}>
+          {(confidence * 100).toFixed(0)}%
+        </div>
+      )}
+      
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute bottom-0 left-0 right-0 p-4">
+          <h3 className="text-white font-medium line-clamp-2">{movie.title}</h3>
+          {year && (
+            <p className="text-white/80 text-sm">{year}</p>
           )}
         </div>
       </div>
     </div>
   );
-};
+}
 
 export default MovieCard; 

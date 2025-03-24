@@ -100,12 +100,23 @@ export interface ImportState {
 
 // Import context actions
 export type ImportAction =
-  | { type: 'SET_CSV_DATA'; payload: CSVParsingResult }
+  | { type: 'SET_CSV_DATA'; payload: string[][] }
   | { type: 'SET_MATCHES'; payload: MovieMatch[] }
-  | { type: 'UPDATE_MATCH'; payload: { index: number; match: Partial<MovieMatch> } }
+  | { type: 'UPDATE_MATCH'; payload: MovieMatch }
   | { type: 'SET_IMPORT_OPTIONS'; payload: ImportOptions }
   | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_STEP'; payload: ImportState['currentStep'] }
+  | { type: 'SET_STEP'; payload: 'upload' | 'validate' | 'summary' }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_IMPORT_SUMMARY'; payload: ImportSummary }
-  | { type: 'RESET' }; 
+  | { type: 'RESET_STATE' };
+
+export type MovieCardSize = 'sm' | 'md' | 'lg';
+
+export interface MovieCardProps {
+  movie: TMDBMovie;
+  size?: MovieCardSize;
+  showConfidence?: boolean;
+  confidence?: number;
+  selected?: boolean;
+  onSelect?: (movie: TMDBMovie) => void;
+} 

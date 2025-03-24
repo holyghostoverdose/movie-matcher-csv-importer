@@ -4,6 +4,8 @@ import { TMDBMovie, MovieMatch } from '../types';
 import { getPosterUrl } from '../utils/tmdbAPI';
 import MovieCard from './MovieCard';
 import MovieSearch from './MovieSearch';
+import { Button } from './ui/button';
+import { ChevronLeft, ChevronRight, Search, Check, X, AlertCircle } from 'lucide-react';
 
 type FilterMode = 'all' | 'matched' | 'errors';
 
@@ -416,185 +418,251 @@ const PaginationControls: React.FC<{
   );
 };
 
-export const ValidationInterface: React.FC = () => {
+export function ValidationInterface() {
   const { state, dispatch } = useImport();
+  const { matches, importOptions } = state;
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const [showSearch, setShowSearch] = useState(false);
 
-  // Reset page when filter changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filterMode]);
+  const filteredMatches = matches.filter(match => {
+    switch (filterMode) {
+      case 'matched':
+        return match.status === 'matched';
+      case 'errors':
+        return match.status === 'unmatched' || match.status === 'uncertain';
+      default:
+        return true;
+    }
+  });
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    // Scroll to top of the component
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
+  const currentMatch = filteredMatches[currentIndex];
+
+  const handlePrevious = () => {
+    setCurrentIndex(prev => Math.max(0, prev - 1));
+    setShowSearch(false);
+  };
+
+  const handleNext = () => {
+    setCurrentIndex(prev => Math.min(filteredMatches.length - 1, prev + 1));
+    setShowSearch(false);
+  };
+
+  const handleUpdateMatch = (match: typeof currentMatch) => {
+    dispatch({
+      type: 'UPDATE_MATCH',
+      payload: match
     });
   };
 
-  const getFilteredMatches = () => {
-    if (filterMode === 'all') {
-      return state.matches;
-    }
-    
-    if (filterMode === 'matched') {
-      return state.matches.filter(match => match.status === 'matched');
-    }
-    
-    if (filterMode === 'errors') {
-      return state.matches.filter(match => 
-        match.status !== 'matched' || match.errorMessage
-      );
-    }
-    
-    return state.matches;
-  };
-
-  const filteredMatches = getFilteredMatches();
-  const totalPages = Math.ceil(filteredMatches.length / itemsPerPage);
-  const currentItems = filteredMatches.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  const handleUpdateMatch = (index: number, updatedMatch: Partial<MovieMatch>) => {
-    const globalIndex = filteredMatches.indexOf(state.matches[index]);
-    if (globalIndex !== -1) {
-      dispatch({
-        type: 'UPDATE_MATCH',
-        payload: { index: globalIndex, match: updatedMatch }
+  const handleMovieSelect = (movie: TMDBMovie) => {
+    if (currentMatch) {
+      handleUpdateMatch({
+        ...currentMatch,
+        matchedMovie: movie,
+        status: 'matched',
+        confidence: 1
       });
     }
+    setShowSearch(false);
   };
 
-  const handleCompleteValidation = () => {
-    // Calculate import summary
-    const total = state.matches.length;
-    const imported = state.matches.filter(match => match.status === 'matched').length;
-    const failed = state.matches.filter(match => match.status !== 'matched').length;
-    
-    dispatch({
-      type: 'SET_IMPORT_SUMMARY',
-      payload: {
-        total,
-        imported,
-        skipped: 0,
-        failed
-      }
-    });
-    
-    dispatch({
-      type: 'SET_STEP',
-      payload: 'summary'
-    });
+  const handleSkip = () => {
+    if (currentMatch) {
+      handleUpdateMatch({
+        ...currentMatch,
+        status: 'unmatched'
+      });
+    }
+    handleNext();
   };
 
-  const handleFilterChange = (value: FilterMode) => {
-    setFilterMode(value);
+  const handleConfirm = () => {
+    if (currentMatch) {
+      handleUpdateMatch({
+        ...currentMatch,
+        status: 'matched'
+      });
+    }
+    handleNext();
   };
 
-  const matchCounts = {
-    all: state.matches.length,
-    matched: state.matches.filter(m => m.status === 'matched').length,
-    errors: state.matches.filter(m => m.status !== 'matched' || m.errorMessage).length
-  };
+  if (!currentMatch) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-lg font-medium">No matches to review</p>
+        <Button
+          variant="outline"
+          onClick={() => dispatch({ type: 'SET_STEP', payload: 'summary' })}
+          className="mt-4"
+        >
+          View Summary
+        </Button>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold">Validate Movie Matches</h2>
-        <p className="text-gray-500">
-          Review and correct the automatically matched movies
-        </p>
-      </div>
-      
-      <div className="flex justify-between items-center">
-        <div className="flex space-x-1 p-1 border rounded-lg">
-          <button
-            onClick={() => handleFilterChange('all')}
-            className={`px-3 py-1.5 text-sm rounded-md ${
-              filterMode === 'all' 
-                ? 'bg-gray-100 font-medium' 
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setFilterMode('all')}
+            className={filterMode === 'all' ? 'bg-accent' : ''}
           >
-            All ({matchCounts.all})
-          </button>
-          <button
-            onClick={() => handleFilterChange('matched')}
-            className={`px-3 py-1.5 text-sm rounded-md ${
-              filterMode === 'matched' 
-                ? 'bg-gray-100 font-medium' 
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
+            All ({matches.length})
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setFilterMode('matched')}
+            className={filterMode === 'matched' ? 'bg-accent' : ''}
           >
-            Matched ({matchCounts.matched})
-          </button>
-          <button
-            onClick={() => handleFilterChange('errors')}
-            className={`px-3 py-1.5 text-sm rounded-md ${
-              filterMode === 'errors' 
-                ? 'bg-gray-100 font-medium' 
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
+            Matched ({matches.filter(m => m.status === 'matched').length})
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setFilterMode('errors')}
+            className={filterMode === 'errors' ? 'bg-accent' : ''}
           >
-            Issues ({matchCounts.errors})
-          </button>
+            Errors ({matches.filter(m => m.status !== 'matched').length})
+          </Button>
         </div>
-        
-        <button
-          onClick={handleCompleteValidation}
-          disabled={matchCounts.matched === 0}
-          className="px-4 py-2 bg-primary text-white rounded-md disabled:opacity-50"
-        >
-          Continue to Summary
-        </button>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrevious}
+            disabled={currentIndex === 0}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm">
+            {currentIndex + 1} of {filteredMatches.length}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleNext}
+            disabled={currentIndex === filteredMatches.length - 1}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
-      
-      <div className="space-y-6">
-        {currentItems.length > 0 ? (
-          currentItems.map((match, index) => (
-            <MovieMatchRow
-              key={index}
-              match={match}
-              index={index}
-              onUpdate={handleUpdateMatch}
-            />
-          ))
-        ) : (
-          <div className="text-center py-12 border border-dashed rounded-lg">
-            <svg 
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-12 w-12 mx-auto text-gray-400 mb-4"
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
-              />
-            </svg>
-            <p className="text-gray-600 text-lg font-medium">No matches to display</p>
-            <p className="text-gray-500 mt-1">Try changing your filter selection</p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <div className="rounded-lg border bg-card p-4">
+            <h3 className="font-medium mb-2">Detected Movie</h3>
+            <div className="space-y-2">
+              <p className="text-sm">
+                <span className="font-medium">Title:</span> {currentMatch.detectedTitle}
+              </p>
+              {currentMatch.detectedYear && (
+                <p className="text-sm">
+                  <span className="font-medium">Year:</span> {currentMatch.detectedYear}
+                </p>
+              )}
+              {currentMatch.detectedDate && (
+                <p className="text-sm">
+                  <span className="font-medium">Date:</span> {currentMatch.detectedDate}
+                </p>
+              )}
+              {currentMatch.detectedRating && (
+                <p className="text-sm">
+                  <span className="font-medium">Rating:</span> {currentMatch.detectedRating}
+                </p>
+              )}
+            </div>
           </div>
-        )}
-        
-        <PaginationControls
-          currentPage={currentPage}
-          totalPages={totalPages}
-          setCurrentPage={handlePageChange}
-          className="mt-6"
-        />
+
+          {currentMatch.matchedMovie ? (
+            <div className="rounded-lg border bg-card p-4">
+              <h3 className="font-medium mb-2">Matched Movie</h3>
+              <MovieCard
+                movie={currentMatch.matchedMovie}
+                size="medium"
+                showConfidence
+                confidence={currentMatch.confidence}
+              />
+            </div>
+          ) : (
+            <div className="rounded-lg border bg-card p-4">
+              <h3 className="font-medium mb-2">No Match Found</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                No matching movie was found in TMDB. You can search manually or skip this entry.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSearch(true)}
+                className="w-full"
+              >
+                <Search className="h-4 w-4 mr-2" />
+                Search Manually
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          <div className="rounded-lg border bg-card p-4">
+            <h3 className="font-medium mb-2">Match Status</h3>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                {currentMatch.status === 'matched' ? (
+                  <Check className="h-4 w-4 text-green-500" />
+                ) : currentMatch.status === 'uncertain' ? (
+                  <AlertCircle className="h-4 w-4 text-yellow-500" />
+                ) : (
+                  <X className="h-4 w-4 text-red-500" />
+                )}
+                <span className="text-sm capitalize">{currentMatch.status}</span>
+              </div>
+              {currentMatch.confidence && (
+                <div className="text-sm">
+                  <span className="font-medium">Confidence:</span>{' '}
+                  <span className={currentMatch.confidence > 0.7 ? 'text-green-500' : 'text-yellow-500'}>
+                    {(currentMatch.confidence * 100).toFixed(0)}%
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-2">
+            <Button
+              variant="outline"
+              onClick={handleSkip}
+            >
+              Skip
+            </Button>
+            {currentMatch.matchedMovie && (
+              <Button
+                onClick={handleConfirm}
+              >
+                Confirm Match
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
+
+      {showSearch && (
+        <div className="mt-6">
+          <MovieSearch
+            onMovieSelect={handleMovieSelect}
+            initialValue={currentMatch.detectedTitle}
+            selectedMovie={currentMatch.matchedMovie}
+          />
+        </div>
+      )}
     </div>
   );
-};
+}
 
 export default ValidationInterface; 
